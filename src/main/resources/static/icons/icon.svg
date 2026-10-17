@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#0e1116"/>
+  <g transform="rotate(-6 32 32)">
+    <rect x="12" y="12" width="40" height="40" rx="5" fill="#c0402f"/>
+    <rect x="15" y="15" width="34" height="34" rx="3" fill="none" stroke="#f6e7d0" stroke-opacity=".55" stroke-width="1.2"/>
+    <text x="32" y="43" text-anchor="middle" font-family="KaiTi, STKaiti, 'Kaiti SC', serif" font-size="27" fill="#f6e7d0">修</text>
+  </g>
+</svg>

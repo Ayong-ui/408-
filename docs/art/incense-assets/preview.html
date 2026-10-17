@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>香炉素材叠合预览</title>
+<style>
+  body { font-family: "Microsoft YaHei", sans-serif; margin: 24px; }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .card { text-align: center; }
+  .stage { position: relative; width: 340px; height: 340px; border-radius: 8px; overflow: hidden; }
+  .stage img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .paper { background: #f3efe6; }
+  .dark  { background: #1d1f24; }
+  .grid  { background-image: linear-gradient(45deg,#c8c8c8 25%,transparent 25%),linear-gradient(-45deg,#c8c8c8 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#c8c8c8 75%),linear-gradient(-45deg,transparent 75%,#c8c8c8 75%); background-size: 20px 20px; background-position: 0 0,0 10px,10px -10px,-10px 0; background-color: #efefef; }
+  p { color: #555; font-size: 13px; }
+  code { background:#eee; padding:2px 5px; border-radius:3px; }
+</style>
+</head>
+<body>
+<h2>香炉计时器素材叠合预览</h2>
+<p>两张 1024×1024 素材按原坐标直接叠合（先 shadow 后 body）。之后香支素材插在炉口椭圆中心偏下位置（约 x 50%，y 47%）。</p>
+<div class="row">
+  <div class="card">
+    <div class="stage paper">
+      <img src="incense-shadow.png" alt="shadow">
+      <img src="incense-body.png" alt="body">
+    </div>
+    <p>宣纸底色（亮色网页）</p>
+  </div>
+  <div class="card">
+    <div class="stage dark">
+      <img src="incense-shadow.png" alt="shadow">
+      <img src="incense-body.png" alt="body">
+    </div>
+    <p>暗色网页</p>
+  </div>
+  <div class="card">
+    <div class="stage grid">
+      <img src="incense-shadow.png" alt="shadow">
+      <img src="incense-body.png" alt="body">
+    </div>
+    <p>透明棋盘格（验证 Alpha）</p>
+  </div>
+</div>
+<h3>前端用法</h3>
+<pre><code>&lt;div class="burner"&gt;
+  &lt;img src="incense-shadow.png" class="shadow"&gt;
+  &lt;img src="incense-body.png" class="body"&gt;
+  &lt;!-- 香支素材插在这里，绝对定位到炉口 --&gt;
+&lt;/div&gt;</code></pre>
+</body>
+</html>

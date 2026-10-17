@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 620" role="img" aria-label="水墨修士剪影">
+  <defs>
+    <linearGradient id="wash" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d7ded7" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#8b9a96" stop-opacity=".12"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="9"/></filter>
+  </defs>
+  <path d="M60 610c18-122 66-186 132-220-29-35-43-77-37-132 8-75 52-122 111-122s103 47 111 122c6 55-8 97-37 132 66 34 114 98 132 220z" fill="url(#wash)" opacity=".72"/>
+  <path d="M147 214c5-91 54-145 119-145 64 0 113 54 118 145-28-31-55-46-82-49-35 28-91 39-155 49z" fill="#28302f" opacity=".94"/>
+  <path d="M171 207c8-59 42-98 95-98s87 39 95 98c-25 31-57 47-95 47s-70-16-95-47z" fill="#c8c8b9" opacity=".82"/>
+  <path d="M206 196c9 12 21 18 36 18s27-6 36-18" fill="none" stroke="#4f5c58" stroke-width="4" stroke-linecap="round" opacity=".75"/>
+  <path d="M224 238h56l24 74-52 38-52-38z" fill="#d2d8cd" opacity=".85"/>
+  <path d="M152 365c42-35 83-48 128-48s86 13 128 48l-20 245H92z" fill="#536864" opacity=".58"/>
+  <path d="M280 282l-40 328h114l-18-260z" fill="#e3dfca" opacity=".33"/>
+  <path d="M115 585c76-35 174-43 253-10" fill="none" stroke="#a93d32" stroke-width="5" opacity=".6"/>
+  <ellipse cx="240" cy="610" rx="184" ry="22" fill="#536864" opacity=".18" filter="url(#soft)"/>
+</svg>

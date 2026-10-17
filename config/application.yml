@@ -1,0 +1,17 @@
+# 修仙台本机配置：这里的同名项会覆盖 src/main/resources/application.yml。改完重启修仙台生效。
+# 下面都是注释掉的示例，需要哪项就去掉行首的 # 。
+
+# 换端口（tailscale serve 也要跟着改）
+# server:
+#   port: 7788
+
+# xiuxian:
+#   # 除 localhost / 127.0.0.1 / *.ts.net 之外，再允许哪些主机名访问
+#   allowed-hosts: []
+#   wendao:
+#     # 炼化太慢可以换更快的模型（在默认参数后面加 --model sonnet）
+#     claude-args: ["-p", "--output-format", "text", "--tools", "", "--no-session-persistence", "--strict-mcp-config", "--model", "sonnet"]
+#     # 很长的课需要分段，可以放宽超时
+#     timeout-minutes: 60
+#     # 笔记想直接放进自己的笔记库（比如 Obsidian）可以改这里，用正斜杠
+#     notes-dir: D:/Notes/闻道阁

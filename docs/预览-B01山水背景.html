@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>修仙台 · B01 山水背景预览</title>
+<style>
+  :root {
+    --ink-0: #090b0f;
+    --ink-1: #0e1116;
+    --paper: #ece3cd;
+    --paper-2: #c4b99f;
+    --paper-3: #918871;
+    --gold: #c9a562;
+    --gold-hi: #ead096;
+    --cinnabar: #a8352a;
+    --seal: #c0402f;
+    --jade: #5fb9a5;
+    --line: rgba(201,165,98,.15);
+    --ink: #2b241c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: 'LXGW WenKai', 'KaiTi', 'STKaiti', 'Songti SC', 'Noto Serif SC', 'SimSun', serif;
+    font-size: 16px; line-height: 1.6; color: var(--paper);
+    background: var(--ink-0); overflow-x: hidden;
+  }
+  /* 背景层：三种模式可切换 */
+  .sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .sky.b01 {
+    background: url('art/backgrounds/mountains-main.png') center 30% / cover no-repeat;
+  }
+  .sky.b01.dim::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(9,11,15,.28) 0%, rgba(9,11,15,.38) 45%, rgba(9,11,15,.78) 100%);
+  }
+  .sky.b01.strong::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(9,11,15,.5) 0%, rgba(9,11,15,.6) 45%, rgba(9,11,15,.88) 100%);
+  }
+  .sky.orig {
+    background:
+      radial-gradient(ellipse 60% 40% at 80% 6%, rgba(236,214,160,.1), transparent 70%),
+      radial-gradient(ellipse 80% 50% at 12% 100%, rgba(95,185,165,.06), transparent 70%),
+      linear-gradient(180deg, #0a0c11 0%, #0e1118 45%, #161b25 78%, #0e1117 100%);
+  }
+  /* 控制条 */
+  .ctl {
+    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 50; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+    padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: rgba(14,17,22,.9); backdrop-filter: blur(4px); font-size: 13px;
+  }
+  .ctl button {
+    font-family: inherit; font-size: 13px; color: var(--paper-2); cursor: pointer;
+    padding: 4px 12px; border: 1px solid var(--line); border-radius: 6px; background: transparent;
+  }
+  .ctl button.on { border-color: var(--gold); color: var(--gold-hi); background: rgba(201,165,98,.12); }
+  .shell { position: relative; z-index: 1; padding: 0 18px 60px; max-width: 1180px; margin: 0 auto; }
+  .rail {
+    position: fixed; left: 0; top: 0; bottom: 0; z-index: 20; width: 92px;
+    display: flex; flex-direction: column; gap: 14px; padding: 22px 0;
+    background: linear-gradient(180deg, rgba(9,11,15,.86), rgba(9,11,15,.72));
+    backdrop-filter: blur(3px);
+  }
+  .rail a { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: var(--paper-3); font-size: 12px; letter-spacing: .1em; }
+  .rail .seal {
+    display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--line);
+    border-radius: 8px; color: var(--paper-2); font-family: 'Ma Shan Zheng','KaiTi',serif; font-size: 22px;
+  }
+  .rail a.on .seal { border-color: var(--gold); color: var(--gold-hi); box-shadow: 0 0 14px rgba(201,165,98,.2); }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 18px 0 8px; }
+  .topbar .logo { font-family: 'Ma Shan Zheng','KaiTi',serif; font-size: 24px; letter-spacing: .12em; color: var(--gold-hi); text-decoration: none; }
+  .topbar .realm { color: var(--paper-2); font-size: 14px; }
+  main { margin-left: 92px; padding: 0 20px; }
+  .heaven { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 26px; padding: 10px 0 16px; }
+  .lunar { font-family: 'Ma Shan Zheng','KaiTi',serif; font-size: 26px; letter-spacing: .08em; color: var(--gold-hi); }
+  .almanac { color: var(--paper-2); font-size: 14px; }
+  /* 档案区：P01 边框 + P02 底衬 + 立绘 */
+  .dossier {
+    position: relative; overflow: hidden; border-radius: 4px;
+    background: url('art/ui/panel-frame.png') center / 100% 100% no-repeat;
+    min-height: 300px;
+  }
+  .dossier::before {
+    content: ''; position: absolute; inset: 14px; pointer-events: none;
+    background: url('art/ui/dossier-wash.png') left center / 42% 100% no-repeat;
+  }
+  .dossier-inner {
+    position: relative; display: grid; grid-template-columns: 250px 1fr; gap: 10px;
+    padding: 26px 30px 26px 20px; min-height: 300px; align-items: center;
+  }
+  .dossier-portrait { text-align: center; }
+  .dossier-portrait img { max-width: 100%; max-height: 250px; filter: saturate(.72) contrast(.92); }
+  .dossier-copy h1 {
+    margin: 6px 0 4px; font-family: 'Ma Shan Zheng','KaiTi',serif; font-size: 34px;
+    font-weight: normal; letter-spacing: .14em; color: #283c37;
+  }
+  .dossier-kicker { color: #76694f; font-size: 13px; letter-spacing: .16em; }
+  .dossier-copy p { margin: 0 0 14px; color: #68756e; font-size: 14px; }
+  .dossier-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dossier-tags span { padding: 4px 10px; border: 1px solid rgba(83,101,91,.32); color: #4c6258; font-size: 13px; }
+  .dossier-seal {
+    position: absolute; right: 22px; top: 18px; width: 52px; height: 52px; display: grid; place-items: center;
+    border: 2px solid rgba(165,57,46,.65); color: rgba(165,57,46,.82); font-family: 'Ma Shan Zheng','KaiTi',serif;
+    font-size: 28px; transform: rotate(-7deg);
+  }
+  /* 纸本对比卡：浅色与深色 */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 20px; }
+  .card {
+    border-radius: 8px; padding: 18px 20px; box-shadow: 0 12px 28px rgba(0,0,0,.25);
+  }
+  .card.light { background: url('art/ui/paper-light.png') center / cover no-repeat; color: #3a3a30; }
+  .card.dark { background: url('art/ui/paper-dark.png') center / cover no-repeat; color: #d8d3c2; }
+  .card h2 { margin: 0 0 8px; font-size: 18px; font-family: 'Ma Shan Zheng','KaiTi',serif; letter-spacing: .1em; }
+  .card .row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+  .card .row b { font-weight: normal; color: var(--gold); }
+  .note { margin-top: 14px; font-size: 12px; color: var(--paper-3); }
+</style>
+</head>
+<body>
+  <div class="sky orig" id="sky"></div>
+  <div class="ctl" id="ctl">
+    <button data-mode="orig" class="on">现有深色天幕</button>
+    <button data-mode="b01">B01 原图</button>
+    <button data-mode="b01 dim">B01 + 压暗</button>
+    <button data-mode="b01 strong">B01 + 强压暗</button>
+  </div>
+
+  <div class="shell">
+    <nav class="rail" style="position:fixed">
+      <a class="on" href="#"><span class="seal">府</span>洞府</a>
+      <a href="#"><span class="seal">静</span>静室</a>
+      <a href="#"><span class="seal">经</span>藏经阁</a>
+      <a href="#"><span class="seal">星</span>观星台</a>
+      <a href="#"><span class="seal">闻</span>闻道阁</a>
+      <a href="#"><span class="seal">阵</span>阵</a>
+    </nav>
+    <main>
+      <header class="topbar">
+        <a class="logo" href="#">修仙台</a>
+        <span class="realm">炼气 · 初期</span>
+      </header>
+      <div class="heaven">
+        <span class="lunar">乙巳年 九月 初五</span>
+        <span class="almanac">宜入定 · 忌急躁</span>
+        <span class="almanac">时辰 · 戌</span>
+      </div>
+
+      <section class="dossier" aria-label="修士档案">
+        <div class="dossier-inner">
+          <div class="dossier-portrait">
+            <img src="art/portraits/protagonist-bust-alpha.png" alt="白发白衣修士立绘">
+          </div>
+          <div class="dossier-copy">
+            <span class="dossier-kicker">修士档案 · 本命卷</span>
+            <h1>白衣修士</h1>
+            <p>白发如雪，浅蓝眸光，额间一点蓝纹。久居洞府，善吐纳，好藏经。</p>
+            <div class="dossier-tags">
+              <span>境界 · 炼气初期</span>
+              <span>体魄 · 康健</span>
+              <span>功法 · 吐纳诀</span>
+            </div>
+          </div>
+        </div>
+        <div class="dossier-seal" aria-hidden="true">修</div>
+      </section>
+
+      <div class="cards">
+        <div class="card light">
+          <h2>今日功课</h2>
+          <div class="row"><span>吐纳 · 卯时</span><b>完成</b></div>
+          <div class="row"><span>静坐 · 午时</span><b>进行中</b></div>
+          <div class="row"><span>抄经 · 戌时</span><b>待办</b></div>
+        </div>
+        <div class="card dark">
+          <h2>修行进度</h2>
+          <div class="row"><span>灵气</span><b>炼气 12%</b></div>
+          <div class="row"><span>熟练度</span><b>吐纳诀 三级</b></div>
+          <div class="row"><span>体魄</span><b>康健</b></div>
+        </div>
+      </div>
+      <p class="note">预览说明：上方按钮切换背景模式（B01 原图 / 压暗两档 / 现有深色天幕对照）。档案区为 P01 面板边框 + P02 淡墨底衬 + 主角透明立绘；两张卡片为 T01 浅色纸本 / T02 深色纸本。重点看 B01 是否会抢字、山水明暗与卡片协调性。</p>
+    </main>
+  </div>
+
+<script>
+  const sky = document.getElementById('sky');
+  document.getElementById('ctl').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    document.querySelectorAll('#ctl button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    sky.className = 'sky ' + b.dataset.mode;
+  });
+</script>
+</body>
+</html>

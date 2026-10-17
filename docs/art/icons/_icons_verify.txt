@@ -1,0 +1,6 @@
+guci.png: (256, 256) RGBA alpha=(0, 255) 44334B
+yupei.png: (256, 256) RGBA alpha=(0, 255) 46181B
+fu.png: (256, 256) RGBA alpha=(0, 255) 29081B
+guci-source.png: (2048, 2048) RGBA alpha=(0, 255) 2791255B
+yupei-source.png: (2048, 2048) RGBA alpha=(0, 255) 2973191B
+fu-source.png: (2048, 2048) RGBA alpha=(0, 255) 1916225B

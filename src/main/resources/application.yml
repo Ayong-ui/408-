@@ -1,0 +1,52 @@
+# 修仙台默认配置。想改的话，在项目根目录的 config/application.yml 里覆盖同名项即可，不用动这里。
+
+server:
+  # 只监听本机。手机通过 Tailscale（tailscale serve）访问，局域网和公网都连不进来。
+  address: 127.0.0.1
+  port: 7788
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,text/javascript,application/javascript,application/json,image/svg+xml,application/manifest+json
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: xiuxiantai
+  main:
+    banner-mode: off
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
+
+xiuxian:
+  # 数据库、字幕、笔记、日志都在这里
+  data-dir: data
+  zone: Asia/Shanghai
+  # 除 localhost / 127.0.0.1 / *.ts.net 之外，还允许哪些主机名访问
+  allowed-hosts: []
+  wendao:
+    python: .venv/Scripts/python.exe
+    script: wendao/refine.py
+    prompt-file: prompts/bilibili_note.md
+    # 从浏览器导出的 B 站 cookies.txt（Netscape 格式）。B 站字幕通常需要登录才能拿到。
+    cookies-file: config/bilibili-cookies.txt
+    notes-dir: ${xiuxian.data-dir}/notes
+    subtitles-dir: ${xiuxian.data-dir}/subtitles
+    jobs-dir: ${xiuxian.data-dir}/wendao
+    claude-command: claude
+    # --tools "" 禁用全部工具：字幕是第三方内容，只让 Claude 读和写文字，碰不到本机文件
+    claude-args: ["-p", "--output-format", "text", "--tools", "", "--no-session-persistence", "--strict-mcp-config"]
+    timeout-minutes: 30
+
+logging:
+  file:
+    name: ${xiuxian.data-dir}/logs/xiuxian.log

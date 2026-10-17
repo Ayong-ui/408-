@@ -1,0 +1,343 @@
+// 洞府：首页。首屏是天时栏、今日功课和静室；往下是灵力统计、修行日志和法器栏。
+
+import { computed, onMounted, ref, watch } from '/vendor/vue.esm-browser.prod.js';
+import { api } from '../api.js';
+import { L, greeting, jiOfDay, pick, sub } from '../copy.js';
+import { floatText } from '../fx.js';
+import { AMBIENTS, ambientPlaying, playAmbient, stopAmbient } from '../sound.js';
+import { bumpData, fail, liveElapsed, refreshHome, setItemDone, startSession, store, toast } from '../store.js';
+import { fmtDur, lunarText, shichen } from '../time.js';
+import Bars from '../components/bars.js';
+import Donut from '../components/donut.js';
+import RealmBar from '../components/realm.js';
+import SealBox from '../components/seal.js';
+import TimerPanel from '../components/timer.js';
+
+const RANGES = [
+  { key: 'today', name: '今日', period: '今日', prev: '昨日同时' },
+  { key: 'week', name: '本周', period: '本周', prev: '上周同期' },
+  { key: 'month', name: '本月', period: '本月', prev: '上月同期' },
+];
+
+export default {
+  name: 'HomeView',
+  components: { Bars, Donut, RealmBar, SealBox, TimerPanel },
+  setup() {
+    const home = computed(() => store.home);
+    const plain = computed(() => store.settings && store.settings.plainMode);
+    const nowDate = computed(() => new Date(store.now));
+    // 后端只统计已出关的修炼，正在燃的这炷香由前端实时加上
+    const todaySeconds = computed(() => (home.value ? home.value.todaySeconds : 0) + (store.active ? liveElapsed() : 0));
+
+    // —— 天时栏 ——
+    const lunar = computed(() => lunarText(nowDate.value));
+    const hour = computed(() => shichen(nowDate.value));
+    const yi = computed(() => {
+      const slot = home.value && home.value.slot;
+      if (slot) return slot.hint || slot.name;
+      const h = nowDate.value.getHours();
+      return h >= 23 || h < 7 ? '安寝养神' : '调息、自选功课';
+    });
+    const ji = computed(() => (home.value ? jiOfDay(home.value.day) : ''));
+    const greet = computed(() => greeting(nowDate.value));
+
+    // —— 今日功课 ——
+    const items = computed(() => (home.value ? home.value.items : []));
+    const doneCount = computed(() => items.value.filter((i) => i.done).length);
+    const allLit = computed(() => home.value && home.value.meridians.length && home.value.meridians.every((m) => m.lit));
+    const editing = ref(false);
+    const newItem = ref('');
+
+    async function onCheck(item, done, el) {
+      const ok = await setItemDone(item, done);
+      if (ok && done) {
+        const path = store.paths.find((p) => p.id === item.pathId);
+        const line = pick(path && path.body ? 'checkBody' : 'check');
+        if (line) floatText(el, line);
+      }
+    }
+
+    async function addItem() {
+      const name = newItem.value.trim();
+      if (!name) return;
+      try {
+        await api.post('/daily-items', { name });
+        newItem.value = '';
+        await refreshHome();
+      } catch (e) {
+        fail(e);
+      }
+    }
+
+    async function removeItem(item) {
+      try {
+        await api.del('/daily-items/' + item.id);
+        await refreshHome();
+      } catch (e) {
+        fail(e);
+      }
+    }
+
+    // —— 灵力统计 ——
+    const range = computed(() => RANGES.find((r) => r.key === store.range) || RANGES[1]);
+    const dist = ref(null);
+    const trend = ref([]);
+    const showTable = ref(false);
+    const statsBusy = ref(false);
+
+    async function loadStats() {
+      statsBusy.value = true;
+      try {
+        const days = store.range === 'month' ? 30 : 7;
+        const [d, t] = await Promise.all([
+          api.get('/stats/distribution?range=' + store.range),
+          api.get('/stats/trend?days=' + days),
+        ]);
+        dist.value = d;
+        trend.value = t.days;
+      } catch (e) {
+        fail(e);
+      } finally {
+        statsBusy.value = false;
+      }
+    }
+
+    function setRange(key) {
+      store.range = key;
+    }
+
+    watch(() => [store.range, store.dataVersion], loadStats);
+
+    // —— 修行日志 ——
+    const logText = ref('');
+    const logState = ref('');
+    let logTimer = null;
+    let logDay = '';
+
+    watch(() => home.value && home.value.day, () => {
+      if (!home.value) return;
+      if (logDay !== home.value.day || !logState.value) {
+        logDay = home.value.day;
+        logText.value = home.value.log ? home.value.log.content : '';
+      }
+    }, { immediate: true });
+
+    watch(() => home.value && home.value.log && home.value.log.content, (c) => {
+      // 别处（传音玉简、另一台设备）改了日志，且本地没在编辑时同步过来
+      if (logState.value !== 'dirty' && c != null) logText.value = c;
+    });
+
+    function onLogInput() {
+      logState.value = 'dirty';
+      clearTimeout(logTimer);
+      logTimer = setTimeout(saveLog, 1500);
+    }
+
+    async function saveLog() {
+      clearTimeout(logTimer);
+      if (logState.value !== 'dirty' || !home.value) return;
+      logState.value = 'saving';
+      try {
+        await api.put('/logs/' + home.value.day, { content: logText.value });
+        logState.value = 'saved';
+        refreshHome().catch(() => {});
+      } catch (e) {
+        logState.value = 'dirty';
+        fail(e);
+      }
+    }
+
+    // —— 法器栏 ——
+    const toolsOpen = ref(localStorage.getItem('xxt.tools') !== 'closed');
+    const noteOpen = ref(false);
+    const noteText = ref('');
+    const ambient = ref(ambientPlaying());
+
+    function toggleTools() {
+      toolsOpen.value = !toolsOpen.value;
+      localStorage.setItem('xxt.tools', toolsOpen.value ? 'open' : 'closed');
+    }
+
+    function quickStart() {
+      if (store.active) {
+        toast('已在入定中。', 'info');
+        return;
+      }
+      const id = home.value && (home.value.lastMethodId || (home.value.methods[0] && home.value.methods[0].id));
+      if (!id) {
+        toast('先去藏经阁撰写一部功法。', 'info');
+        return;
+      }
+      startSession(id);
+    }
+
+    async function sendNote() {
+      const text = noteText.value.trim();
+      if (!text) return;
+      try {
+        await api.post('/logs/append', { text });
+        noteText.value = '';
+        noteOpen.value = false;
+        logState.value = '';
+        toast(pick('log', true));
+        await refreshHome();
+      } catch (e) {
+        fail(e);
+      }
+    }
+
+    function toggleAmbient(key) {
+      if (ambient.value === key) {
+        stopAmbient();
+        ambient.value = null;
+      } else {
+        playAmbient(key);
+        ambient.value = key;
+      }
+    }
+
+    onMounted(loadStats);
+
+    return {
+      store, home, plain, todaySeconds, L, sub, lunar, hour, yi, ji, greet,
+      items, doneCount, allLit, editing, newItem, onCheck, addItem, removeItem,
+      RANGES, range, dist, trend, showTable, statsBusy, setRange,
+      logText, logState, onLogInput, saveLog,
+      toolsOpen, toggleTools, quickStart, noteOpen, noteText, sendNote, AMBIENTS, ambient, toggleAmbient,
+      fmtDur, dur: (s) => fmtDur(s, plain.value),
+    };
+  },
+  template: `
+  <div class="view home" v-if="home">
+    <section class="dossier-hero" aria-label="修士档案">
+      <div class="dossier-portrait"><img src="/art/portraits/protagonist-bust-alpha.webp" alt="白发白衣修士立绘" fetchpriority="high"></div>
+      <div class="dossier-copy">
+        <span class="dossier-kicker">修士档案 · 本命卷</span>
+        <h1>{{ store.settings.daoName }}</h1>
+        <p>静守一方心台，日课自有功行。</p>
+        <div class="dossier-tags"><span><img src="/art/icons/linggen.webp" alt="">境界 · {{ home.cultivation.name }}</span><span><img src="/art/icons/gengu.webp" alt="">体魄 · {{ home.body.name }}</span></div>
+      </div>
+      <div class="dossier-seal" aria-hidden="true">修</div>
+    </section>
+    <section class="heaven">
+      <div class="heaven-time">
+        <span class="lunar">{{ lunar }}</span>
+        <span class="hour">{{ hour }}</span>
+      </div>
+      <div class="almanac">
+        <span><b class="yi">宜</b>{{ yi }}</span>
+        <span><b class="ji">忌</b>{{ ji }}</span>
+      </div>
+      <div class="countdowns">
+        <a v-for="c in home.countdowns" :key="c.id" class="countdown" href="#/settings/countdowns">
+          距{{ c.name }}<b>{{ c.daysLeft }}</b>日
+        </a>
+      </div>
+      <p v-if="greet" class="greet">{{ greet }}</p>
+    </section>
+
+    <section class="realm-head">
+      <div class="dao">
+        <span class="dao-name"><img class="dao-avatar" src="/art/portraits/protagonist-avatar-alpha.webp" alt="">修炼档案</span>
+        <span class="dao-visit">本月入洞府 {{ home.monthVisitDays }} 日 · 今日已修 {{ dur(todaySeconds) }}</span>
+      </div>
+      <RealmBar class="realm-main" :info="home.cultivation" :caption="L('cultivation')"/>
+      <RealmBar class="realm-body" :info="home.body" :caption="L('body')" tone="jade" compact/>
+    </section>
+
+    <div class="home-main">
+      <section class="panel daily">
+        <header class="panel-head">
+          <h2 class="panel-title"><img class="heading-icon" src="/art/icons/fu.webp" alt="">{{ L('daily') }}<small v-if="sub('daily')">{{ sub('daily') }}</small></h2>
+          <span class="daily-count"><b>{{ doneCount }}</b> / {{ items.length }}</span>
+          <button type="button" class="btn-text" @click="editing = !editing">{{ editing ? '完成' : '整理' }}</button>
+        </header>
+        <div class="meridians" :class="{ all: allLit }" :aria-label="'三脉：' + home.meridians.map(m => m.name + (m.lit ? '已通' : '未通')).join('，')">
+          <span class="meridians-label">{{ L('meridians') }}</span>
+          <span v-for="m in home.meridians" :key="m.pathId" class="meridian" :class="{ lit: m.lit }" :style="{ '--c': m.color }">
+            <i></i>{{ m.name }}
+          </span>
+          <span v-if="allLit" class="meridians-done">三脉俱通</span>
+        </div>
+        <ul class="daily-list">
+          <li v-for="it in items" :key="it.id" class="daily-item" :class="{ done: it.done }">
+            <SealBox :model-value="it.done" :label="it.name" @toggle="(v, el) => onCheck(it, v, el)"/>
+            <span class="daily-name">{{ it.name }}</span>
+            <span v-if="it.note" class="daily-note">{{ it.note }}</span>
+            <i v-if="it.color" class="daily-vein" :style="{ background: it.color }"></i>
+            <button v-if="editing" type="button" class="btn-text danger" @click="removeItem(it)" :aria-label="'删去 ' + it.name">删去</button>
+          </li>
+        </ul>
+        <p v-if="!items.length" class="empty-note">今日无功课。可在布阵里设置日课模板。</p>
+        <form v-if="editing" class="row add-item" @submit.prevent="addItem">
+          <input class="input" v-model="newItem" maxlength="20" placeholder="临时添一项功课">
+          <button type="submit" class="btn btn-ghost">添上</button>
+        </form>
+      </section>
+
+      <TimerPanel :methods="home.methods" :limit="6"/>
+    </div>
+
+    <section class="spirit">
+      <div class="filter-row" role="tablist" aria-label="统计范围">
+        <button v-for="r in RANGES" :key="r.key" type="button" role="tab" class="chip" :class="{ on: store.range === r.key }"
+                :aria-selected="store.range === r.key ? 'true' : 'false'" @click="setRange(r.key)">{{ r.name }}</button>
+      </div>
+      <div class="spirit-grid" :class="{ refreshing: statsBusy }">
+        <section class="panel">
+          <header class="panel-head">
+            <h2 class="panel-title"><img class="heading-icon" src="/art/icons/yupei.webp" alt="">{{ L('spirit') }}<small v-if="sub('spirit')">{{ sub('spirit') }}</small></h2>
+          </header>
+          <Donut :data="dist" :period-name="range.period" :prev-name="range.prev"/>
+        </section>
+        <section class="panel">
+          <header class="panel-head">
+            <h2 class="panel-title"><img class="heading-icon" src="/art/icons/feijian.webp" alt="">{{ L('trend') }}<small v-if="sub('trend')">{{ sub('trend') }}</small></h2>
+            <button type="button" class="btn-text" @click="showTable = !showTable">{{ showTable ? '看图' : '看列表' }}</button>
+          </header>
+          <Bars v-if="!showTable" :days="trend" :today="home.day" :paths="store.paths"/>
+          <table v-else class="table">
+            <thead><tr><th>日子</th><th>修炼时长</th></tr></thead>
+            <tbody>
+              <tr v-for="d in trend.slice().reverse()" :key="d.day"><td>{{ d.day }}</td><td>{{ dur(d.seconds) }}</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+    </section>
+
+    <section class="panel log">
+      <header class="panel-head">
+        <h2 class="panel-title"><img class="heading-icon" src="/art/icons/yujian.webp" alt="">{{ L('log') }}<small v-if="sub('log')">{{ sub('log') }}</small></h2>
+        <span class="log-state">{{ logState === 'saving' ? '铭刻中…' : logState === 'saved' ? '已铭刻' : logState === 'dirty' ? '未保存' : '' }}</span>
+      </header>
+      <textarea class="input log-input" v-model="logText" @input="onLogInput" @blur="saveLog" rows="3" maxlength="5000"
+                placeholder="今日一句，可留空。比如：今天终于理解了进程同步。" aria-label="今日修行日志"></textarea>
+    </section>
+
+    <section class="tools" :class="{ open: toolsOpen }">
+      <button type="button" class="tools-toggle" @click="toggleTools" :aria-expanded="toolsOpen ? 'true' : 'false'">
+        {{ L('tools') }} <span aria-hidden="true">{{ toolsOpen ? '▾' : '▸' }}</span>
+      </button>
+      <div v-if="toolsOpen" class="tools-row">
+        <button type="button" class="tool" @click="quickStart"><span class="tool-icon"><img src="/art/icons/linggen.webp" alt=""> </span>静心<small>续上次功法</small></button>
+        <button type="button" class="tool" @click="noteOpen = !noteOpen"><span class="tool-icon"><img src="/art/icons/yujian.webp" alt=""> </span>传音玉简<small>快速记一笔</small></button>
+        <div class="tool tool-sound">
+          <span class="tool-icon"><img src="/art/icons/yupei.webp" alt=""></span>灵音
+          <span class="row">
+            <button v-for="a in AMBIENTS" :key="a.key" type="button" class="chip small" :class="{ on: ambient === a.key }" @click="toggleAmbient(a.key)">{{ a.name }}</button>
+          </span>
+        </div>
+        <a class="tool" href="#/observatory"><span class="tool-icon"><img src="/art/icons/xingpan.webp" alt=""></span>观星台<small>常逛的网站</small></a>
+        <a class="tool" href="#/settings/countdowns"><span class="tool-icon"><img src="/art/icons/fu.webp" alt=""></span>劫数<small>考试倒计时</small></a>
+      </div>
+      <form v-if="toolsOpen && noteOpen" class="row note-form" @submit.prevent="sendNote">
+        <input class="input" v-model="noteText" maxlength="500" placeholder="传音玉简：记下此刻的念头，追加到今日日志" autofocus>
+        <button type="submit" class="btn btn-jade">传音</button>
+      </form>
+    </section>
+  </div>
+  <div v-else class="view loading">
+    <p class="empty-note">{{ store.homeError || '灵气汇聚中…' }}</p>
+  </div>`,
+};

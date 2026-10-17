@@ -1,0 +1,28 @@
+target/
+data/
+data-dev/
+.venv/
+config/bilibili-cookies.txt
+*.log
+
+# Local backups, generated previews and temporary exports
+backups/
+docs/previews/
+docs/art/**/_diag_*
+docs/art/**/_backup_*
+docs/art/**/incense-body-fixed*.png
+
+# IDE and operating-system files
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db
+
+# Local environment overrides
+.env
+.env.*
+!.env.example

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ecece3">
+  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="修仙台">
+  <title>修仙台</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/fonts/wenkai/wenkai.css">
+  <link rel="stylesheet" href="/fonts/wenkai/wenkai-mono.css">
+  <link rel="stylesheet" href="/fonts/mashanzheng/mashanzheng.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/art-theme.css">
+  <script type="module" src="/js/main.js"></script>
+</head>
+<body class="fx-full">
+  <!-- 天幕：月、雾、远山、灵光、纸纹。纯装饰。 -->
+  <div class="sky" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="mist mist-1"></div>
+    <div class="mist mist-2"></div>
+    <svg class="mountains" viewBox="0 0 1440 360" preserveAspectRatio="xMidYMax slice">
+      <defs>
+        <linearGradient id="ridge-far" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1d2433"/>
+          <stop offset="1" stop-color="#121722"/>
+        </linearGradient>
+        <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#cfd8e6" stop-opacity="0"/>
+          <stop offset=".5" stop-color="#cfd8e6" stop-opacity=".05"/>
+          <stop offset="1" stop-color="#cfd8e6" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path fill="url(#ridge-far)" d="M0 230 C 60 210 110 170 170 160 C 230 150 260 120 320 105 C 360 95 390 120 430 140 C 480 165 520 150 570 135 C 630 118 660 80 720 70 C 770 62 800 90 840 115 C 890 145 940 130 990 118 C 1050 104 1090 128 1140 140 C 1200 155 1250 120 1300 112 C 1350 104 1400 130 1440 140 L1440 360 L0 360 Z"/>
+      <rect x="0" y="150" width="1440" height="110" fill="url(#haze)"/>
+      <g fill="#131822">
+        <path d="M0 270 C 70 250 120 225 190 220 C 260 215 300 240 360 236 C 430 232 470 205 540 200 C 610 195 650 228 720 232 C 790 236 840 210 900 192 C 950 178 985 168 1010 168 C 1040 168 1070 186 1110 200 C 1170 220 1230 214 1290 222 C 1350 230 1400 246 1440 250 L1440 360 L0 360 Z"/>
+        <rect x="1001" y="151" width="2" height="18"/>
+        <rect x="1017" y="151" width="2" height="18"/>
+        <path d="M990 154 Q1000 151 1004 146 L1010 138 L1016 146 Q1020 151 1030 154 Q1020 152.5 1010 152.5 Q1000 152.5 990 154 Z"/>
+        <rect x="1009.3" y="133" width="1.4" height="6"/>
+      </g>
+      <rect x="0" y="240" width="1440" height="80" fill="url(#haze)"/>
+      <g fill="#0c0f15">
+        <path d="M0 312 C 90 296 160 300 240 292 C 330 283 380 300 470 304 C 560 308 620 290 700 288 C 790 286 850 304 940 306 C 1030 308 1100 292 1190 294 C 1280 296 1350 310 1440 306 L1440 360 L0 360 Z"/>
+        <path d="M102 298 L110 284 L106 284 L112 272 L108 272 L114 258 L120 272 L116 272 L122 284 L118 284 L126 298 Z"/>
+        <rect x="112.5" y="297" width="3" height="6"/>
+        <path d="M132 296 L138 286 L135 286 L140 277 L137 277 L142 267 L147 277 L144 277 L149 286 L146 286 L152 296 Z"/>
+      </g>
+    </svg>
+    <div class="motes">
+      <i style="--x:8%;--d:0s;--t:26s"></i><i style="--x:17%;--d:-9s;--t:31s"></i><i style="--x:26%;--d:-4s;--t:24s"></i>
+      <i style="--x:35%;--d:-15s;--t:29s"></i><i style="--x:44%;--d:-2s;--t:34s"></i><i style="--x:53%;--d:-20s;--t:27s"></i>
+      <i style="--x:61%;--d:-7s;--t:32s"></i><i style="--x:69%;--d:-12s;--t:25s"></i><i style="--x:77%;--d:-18s;--t:30s"></i>
+      <i style="--x:85%;--d:-5s;--t:28s"></i><i style="--x:92%;--d:-23s;--t:33s"></i><i style="--x:4%;--d:-27s;--t:35s"></i>
+    </div>
+    <div class="grain"></div>
+  </div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <!-- 朱印的粗糙边缘与斑驳：位移 + 噪点侵蚀 -->
+      <filter id="seal-rough" x="-15%" y="-15%" width="130%" height="130%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="3" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="d"/>
+        <feTurbulence type="fractalNoise" baseFrequency="1.7" numOctaves="1" seed="11" result="n2"/>
+        <feColorMatrix in="n2" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.4 2.05" result="mask"/>
+        <feComposite in="d" in2="mask" operator="in"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <div id="app"></div>
+  <noscript>修仙台需要开启 JavaScript。</noscript>
+</body>
+</html>

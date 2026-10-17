@@ -1,0 +1,167 @@
+// 修仙台前端入口：外壳、路由、每秒的天时推进（计时、香尽提醒、忘关询问）和多设备同步。
+
+import { computed, createApp, reactive } from '/vendor/vue.esm-browser.prod.js';
+import { L, pick } from './copy.js';
+import { chime } from './sound.js';
+import {
+  bumpData, liveElapsed, refreshHome, refreshPaths, serverNow, store, toast,
+} from './store.js';
+import { fmtClock } from './time.js';
+import { ConfirmDialog, IdleAsk, ManualEntry, Toasts } from './components/overlays.js';
+import Settlement from './components/settlement.js';
+import Tribulation from './components/tribulation.js';
+import HomeView from './views/home.js';
+import ChamberView from './views/chamber.js';
+import LibraryView from './views/library.js';
+import ObservatoryView from './views/observatory.js';
+import WendaoView from './views/wendao.js';
+import SettingsView from './views/settings.js';
+
+const VIEWS = {
+  home: HomeView,
+  chamber: ChamberView,
+  library: LibraryView,
+  observatory: ObservatoryView,
+  wendao: WendaoView,
+  settings: SettingsView,
+};
+
+const NAV = [
+  { key: 'home', glyph: '府' },
+  { key: 'chamber', glyph: '静' },
+  { key: 'library', glyph: '经' },
+  { key: 'observatory', glyph: '星' },
+  { key: 'wendao', glyph: '闻' },
+  { key: 'settings', glyph: '阵' },
+];
+
+function parseHash() {
+  const [view, section] = location.hash.replace(/^#\/?/, '').split('/');
+  return { view: VIEWS[view] ? view : 'home', section: section || '' };
+}
+
+const route = reactive(parseHash());
+
+window.addEventListener('hashchange', () => {
+  const next = parseHash();
+  const changed = next.view !== route.view;
+  Object.assign(route, next);
+  if (changed && !next.section) window.scrollTo({ top: 0 });
+});
+
+// —— 每半秒推进一次天时（每秒一次会让读数比实际慢上最多一秒） ——
+
+let sticksSeen = { id: null, n: 0 };
+
+function tick() {
+  store.now = Date.now();
+  const a = store.active;
+  if (!a) {
+    document.title = '修仙台';
+    return;
+  }
+  const elapsed = liveElapsed();
+  document.title = (a.status === 'RUNNING' ? '' : '调息 · ') + fmtClock(elapsed) + ' · ' + a.methodName + ' | 修仙台';
+  if (a.status !== 'RUNNING' || !store.settings) return;
+
+  // 一炷香燃尽：提醒一声，不打断
+  const n = Math.floor(elapsed / (store.settings.incenseMinutes * 60));
+  if (sticksSeen.id === a.id && n > sticksSeen.n) {
+    toast(pick('incenseDone'));
+    if (store.settings.soundEnabled) chime(0.7);
+  }
+  sticksSeen = { id: a.id, n };
+
+  // 入定太久没有动静：问一句
+  if (!store.idleAsk && serverNow() - a.lastActiveAt > store.settings.idleAskMinutes * 60000) {
+    store.idleAsk = { sessionId: a.id, lastActiveAt: a.lastActiveAt };
+  }
+}
+
+// —— 与洞府同步（另一台设备上的操作也能看到） ——
+
+let lastDay = null;
+
+async function sync() {
+  try {
+    const home = await refreshHome();
+    if (lastDay && home.day !== lastDay) bumpData();
+    lastDay = home.day;
+  } catch {
+    // 错误信息已放进 store.homeError，界面上会提示
+  }
+}
+
+const App = {
+  setup() {
+    const current = computed(() => VIEWS[route.view]);
+    const viewProps = computed(() => (route.view === 'settings' ? { section: route.section } : {}));
+    const showPill = computed(() => store.active && route.view !== 'home' && route.view !== 'chamber');
+    const pillClock = computed(() => fmtClock(liveElapsed()));
+    return { store, route, NAV, L, current, viewProps, showPill, pillClock, sync };
+  },
+  components: { Settlement, Tribulation, ManualEntry, IdleAsk, ConfirmDialog, Toasts },
+  template: `
+  <div class="shell" :class="{ 'has-active': !!store.active }">
+    <nav class="rail" aria-label="洞府各处">
+      <a class="logo" href="#/" aria-label="修仙台 洞府">
+        <span class="logo-text">修仙台</span>
+        <span class="logo-seal" aria-hidden="true">道</span>
+      </a>
+      <a v-for="n in NAV" :key="n.key" :href="'#/' + n.key" class="rail-item" :class="{ on: route.view === n.key }"
+         :aria-current="route.view === n.key ? 'page' : null">
+        <span class="nav-seal" aria-hidden="true">{{ n.glyph }}</span>
+        <span class="nav-label">{{ L(n.key) }}</span>
+      </a>
+    </nav>
+
+    <header class="topbar">
+      <a class="logo-inline" href="#/">修仙台</a>
+      <span v-if="store.home" class="topbar-realm">{{ store.home.cultivation.name }}</span>
+      <a class="topbar-settings" href="#/settings" :aria-label="L('settings')"><span class="nav-seal" aria-hidden="true">阵</span></a>
+    </header>
+
+    <main class="main">
+      <div v-if="store.homeError" class="offline" role="alert">
+        <span>{{ store.homeError }}</span>
+        <button type="button" class="btn-text" @click="sync">再试一次</button>
+      </div>
+      <component :is="current" v-bind="viewProps" :key="route.view"/>
+    </main>
+
+    <a v-if="showPill" class="incense-pill" href="#/chamber" :class="{ paused: store.active.status !== 'RUNNING' }">
+      <span class="pill-ember" aria-hidden="true"></span>{{ pillClock }}<small>《{{ store.active.methodName }}》</small>
+    </a>
+
+    <nav class="tabbar" aria-label="洞府各处">
+      <a v-for="n in NAV.slice(0, 5)" :key="n.key" :href="'#/' + n.key" class="tab" :class="{ on: route.view === n.key }"
+         :aria-current="route.view === n.key ? 'page' : null">
+        <span class="nav-seal" aria-hidden="true">{{ n.glyph }}</span>
+        <span class="nav-label">{{ L(n.key) }}</span>
+      </a>
+    </nav>
+
+    <Tribulation/>
+    <Settlement/>
+    <ManualEntry/>
+    <IdleAsk/>
+    <ConfirmDialog/>
+    <Toasts/>
+  </div>`,
+};
+
+createApp(App).mount('#app');
+
+sync();
+refreshPaths().catch(() => {});
+setInterval(tick, 500);
+setInterval(() => {
+  if (document.visibilityState === 'visible') sync();
+}, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') sync();
+});
+
+if ('serviceWorker' in navigator && window.isSecureContext) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
